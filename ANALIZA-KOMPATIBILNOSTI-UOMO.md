@@ -467,3 +467,75 @@ Ako se u koraku 3 pokaže da 2.0.37 ima nove blokade (npr. i dalje koristi `Sche
 - Elementor — deprecations (`.elementor-widget-container`, uklanjanje Schemes): https://developers.elementor.com/recent-deprecations/
 - Elementor 4.0 developers update: https://developers.elementor.com/elementor-editor-4-0-developers-update/
 - Site Health izvještaj (dostavio naručitelj, 21.10.2026.)
+
+### 2.5. „Gdje je unesena licenca?" — provjera na konkretnom siteu
+
+Kratki odgovor: **za Uomo je nema gdje unijeti.** Tema ne traži ključ, ne registrira se i ne provjerava licencu — pa ne postoji ni polje u koje bi bila „unesena". Provjereno u kodu teme 2.0.9:
+
+| Provjera | Rezultat |
+|---|---|
+| Opcije koje tema koristi | `uomo_theme_options`, `apus_framework_presets`, `apus_framework_preset_default` — **nijedna nije licenca** |
+| Redux polje tipa `license` u Apus Frameworku 2.2 | **ne postoji** |
+| Importer / demo uvoz | **ne traži** purchase code ni aktivaciju |
+| `theme-update-checker` / `pre_set_site_transient_update_themes` | **nema** — tema se ne zna sama ažurirati |
+| Envato Market dodatak | **nije instaliran** |
+| `style.css` | `License: GNU General Public License v2 or later` |
+
+**Praktična posljedica (dobra vijest):** budući da nema ključa, nema ni „aktivacije" koja bi se mogla izgubiti. Ako dođete do ZIP-a 2.0.37 — s ThemeForest računa, od agencije ili iz starijeg backupa — **kupnja nije potrebna**. Tema radi identično, s ili bez kupljene licence; licenca je samo pravo na *preuzimanje novih verzija* s ThemeForsta.
+
+#### Provjera ima li site ikakav trag kupovine (copy-paste)
+
+```bash
+# 1) tragovi Envato / licenci / purchase code u bazi
+wp option list --search='*envato*'   --fields=option_name
+wp option list --search='*licen*'    --fields=option_name
+wp option list --search='*purchase*' --fields=option_name
+wp option get envato_market --format=json 2>/dev/null
+
+# 2) Theme Options ove teme (očekivano: nema ključa)
+wp option get uomo_theme_options --format=json | head -c 400
+
+# 3) postoje li ZIP-ovi ili stare kopije teme na disku
+find /home/hildegarda -maxdepth 4 -iname "*uomo*" -not -path "*/themes/uomo/*" 2>/dev/null
+find /home/hildegarda -maxdepth 3 -iname "*.zip" -size +1M 2>/dev/null | head
+
+# 4) instalirane verzije
+wp theme list  --fields=name,version,status
+wp plugin list --fields=name,version,status
+```
+
+Ako prva dva `option list` retka vrate `envato_market` ili bilo što s „licen"/„purchase", kupovina je **postojala na ovom siteu** (Envato Market je nekad bio konfiguriran) — tada se trag dalje vodi preko tog API tokena/računa.
+
+#### Licence koje se na ovom siteu **stvarno unose** (i lako ih je zamijeniti s „licencom teme")
+
+| Dodatak (instalirana verzija) | Gdje se vidi/upisuje | Je li vezano uz temu |
+|---|---|---|
+| **ACF 6.0.7** (WP Engine — moguće Pro) | *Custom Fields → Updates* (kartica s ključem i statusom „Active/Expired") | ne |
+| **Duplicator Pro 4.5.20.1** | *Duplicator → Settings → Licensing* | ne |
+| **Slider Revolution 6.5.31** | *Slider Revolution → Registration / Dashboard* | **djelomično** — u paketu teme dolazi 6.6.5 (bez ključa), a na siteu je 6.5.31, dakle instaliran iz drugog izvora |
+| **YITH WooCommerce Wishlist 3.18.0** | *YITH → License Activation* (ako je premium) | ne |
+| **Variation Swatches 2.1.8** (Woosuite) | u postavkama dodatka | ne |
+| **Complianz 7.5.0** / **CookieYes 3.5.3** | u postavkama dodatka (premium ključ) | ne |
+| **Really Simple SSL 6.2.2**, **Wordfence 8.2.2** | u postavkama dodatka (samo Pro/Premium) | ne |
+| **CorvusPay 2.5.1**, **MBE eShip 2.7.2** | merchant ID / API podaci, **ne licenca** | ne |
+| **Elementor 3.11.4** | nema (Elementor **Pro** nije instaliran) | ne |
+
+> Zanimljiv detalj: **RevSlider na siteu (6.5.31) stariji je od onog u paketu teme (6.6.5)**. To znači da je nekoć instaliran zasebno — bilo s vlastitom licencom, bilo iz drugog paketa. Vrijedi provjeriti *Slider Revolution → Registration*: ako piše da je licenca vezana, update ide direktno; ako nije, update dolazi samo s temom.
+
+#### Treba li kupiti? — odluka
+
+```
+Imate pristup ThemeForest računu s kupnjom itema 31127579?
+├─ DA  → ne kupujete. Downloads → Uomo → ZIP 2.0.37 (+ licence certificate za evidenciju)
+├─ NE, ali agencija/izvođač ima račun?
+│      → ne kupujete. Tražite ZIP 2.0.37 (dovoljno je da vam pošalju datoteku)
+├─ NE, ali na disku/backupu postoji ZIP 2.0.37?
+│      → ne kupujete. Provjerite: find / -iname "uomo*.zip", Duplicator arhive, ~/backup
+└─ NE i nigdje nema paketa?
+       → kupujete Regular licencu (59 USD).
+         Alternativa s nižim troškom ne postoji: 3–6 tjedana zamjene teme košta višestruko više.
+```
+
+**Napomena o „besplatnim" izvorima:** kod teme je GPL, pa je *korištenje* kopije legalno pitanje licence, ali paketi s „nulled" stranica redovno sadrže skriveni kod (backdoor u `functions.php`, lažni update kanal, ubacivanje vanjskih skripti). Na siteu s plaćanjima i 244 korisnika to je rizik koji nadmašuje 59 USD. Ako paket dolazi s bilo čega osim ThemeForsta ili provjerenog izvođača, prije instalacije obavezno usporediti datoteke s originalom (Diff se vidi u `tools/audit-uomo-compat.sh` izlazu i grepom na `eval`, `base64_decode`, `wp_remote_get` prema nepoznatim domenama).
+
+---
