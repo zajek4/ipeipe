@@ -77,6 +77,47 @@ To je klasičan scenarij u kojem tema *izgleda* napušteno, a zapravo je kanal d
 
 **Akcijski punkt:** pronaći ThemeForest račun na kojem je kupljena licenca (item 31127579). Licenca uključuje *„Future updates"* — dakle **2.0.37 se može skinuti bez novog plaćanja**. Ako račun nije dostupan, vidi poglavlje 8.
 
+### 2.4. Gdje se vidi licenca (i gdje se **ne** vidi)
+
+**U WordPress administraciji je nema — nigdje.** Provjereno na kodu teme 2.0.9 i na bundlanom *Apus Frameworku* 2.2:
+
+| Mjesto u WP-u | Ima li licence |
+|---|---|
+| *Izgled → Teme → Detalji teme* | ne — samo `Theme URI`, autor i GPL napomena iz `style.css` |
+| *Apus Framework → Theme Options* (`uomo_theme_options`, Redux) | ne — nema polja `license` / `purchase_code` / `envato` |
+| *Dodaci* | nema **Envato Market** (nije na popisu instaliranih) |
+| *Alati → Zdravlje sajta* | ne |
+| Kod teme | nema `theme-update-checker`, nema `pre_set_site_transient_update_themes`, nema reference na Envato/purchase code |
+
+Dakle: **ne postoji „ključ" koji bi se negdje upisao.** Uomo se ne registrira i ne provjerava licencu — zato nema ni ekrana na kojem bi se vidjela.
+
+**Gdje je stvarno:** na **Envato/ThemeForest računu** s kojeg je tema kupljena.
+
+1. Prijava na https://themeforest.net → gore desno **Account → Downloads**
+2. Nađi **Uomo – Multipurpose WooCommerce WordPress Theme** (item `31127579`) → gumb **Download**
+3. Ispod gumba **„License certificate & purchase code"** → PDF/TXT — to je jedini dokument koji se naziva „licencom" (sadrži: kupca, datum, vrstu licence, *Item License Code*)
+4. Za dokaz o kupnji: **Account → Statements** (računi)
+
+**Što vam treba za nadogradnju:** samo pristup tom računu i **Download** (licenca uključuje *Future updates* neograničeno — podrška od 6 mjeseci je odvojena stvar i njeno istekom **ne** gubite pravo na nove verzije). „Purchase code" se **ne upisuje** u Uomo; koristi se samo kod Envato Market dodatka — a i on traži **Personal API token** (*Settings → API Keys*), ne purchase code.
+
+**Ako se račun ne zna**, redom:
+
+1. Pretražiti e-mail (vlasnik, bivši izvođač, `info@`) po: `ThemeForest`, `Envato`, `Uomo`, `31127579` — potvrda o kupnji dolazi na e-mail.
+2. Pitati agenciju/developera koji je gradio site — kupnja je najčešće na **njihovom** računu; dovoljno je da vam pošalju ZIP 2.0.37 (ili da vas dodaju kao korisnika).
+3. Pogledati stare backupe i dokumentaciju projekta (Duplicator arhive, `~/backup`, e-mail arhiva) — ZIP originala često je negdje pohranjen.
+4. Kontaktirati **ApusTheme** (preko profila na ThemeForstu ili `apusthemes.com`) s dokazom o kupnji — mogu potvrditi kupca, ali ne mogu „vratiti" licencu bez računa.
+5. Ako ništa ne uspije: nova **Regular** licenca je **59 USD** — i dalje jeftinije od zamjene teme.
+
+**Provjera na serveru (WP-CLI):**
+
+```bash
+wp plugin list --field=name | grep -i envato        # je li Envato Market instaliran
+wp theme list --fields=name,version,status          # verzija teme
+wp option get uomo_theme_options --format=json | grep -iE "licen|purchase|envato"   # očekivano: prazno
+```
+
+**Napomena o vrsti licence:** za jedan webshop je dovoljna **Regular License** (jedan krajnji proizvod, korisnici ne plaćaju pristup). **Extended** (1.100 USD) treba samo ako se tema naplaćuje krajnjim korisnicima kao dio proizvoda — za vaš slučaj nije potrebna.
+
 ---
 
 ## 3. Stanje sustava i „crvene zastavice" iz Site Healtha
