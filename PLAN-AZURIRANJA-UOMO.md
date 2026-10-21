@@ -68,7 +68,7 @@ wp search-replace 'https://www.example.hr' 'https://staging.example.hr' --all-ta
 find wp-content/themes/uomo-child -type f | sort
 
 # audit trenutnog stanja
-bash tools/audit-uomo-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child
+bash tools/audit-theme-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child
 
 # HPOS
 wp wc hpos status
@@ -119,7 +119,7 @@ wp db export ~/backup-options-$(date +%F).sql --tables=$(wp db tables 'wp_option
 
 ### 2.2 Verifikacija faze 2
 
-- [ ] `bash tools/audit-uomo-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child`
+- [ ] `bash tools/audit-theme-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child`
       → očekivano: **FAIL = 0** (nema `Core\Schemes`), zastarjelih overridea **0–2** (jer je WC još 7.4.2)
 - [ ] Admin: *Izgled → Prilagodi* radi; **Theme Options** (Redux) se otvaraju bez greške
 - [ ] `debug.log` bez `Fatal error`, bez poplave deprecationa
@@ -282,7 +282,7 @@ Nakon svakog: `debug.log`, osnovni klik kroz pogođenu funkcionalnost.
 | „The theme is missing the style.css" | nepotpuno raspakiran ZIP | ponovno raspakirati `uomo/` |
 | Elementor editor bijel / widget nestao | `Core\Schemes` (stara tema) | vratiti Elementor, update teme |
 | Checkout bez metode plaćanja | CorvusPay nekompatibilan s WC 10 | update CorvusPay, provjeriti HPOS |
-| „Your theme has outdated templates" | zastarjeli overridei | `tools/audit-uomo-compat.sh` |
+| „Your theme has outdated templates" | zastarjeli overridei | `tools/audit-theme-compat.sh` |
 | Dostava ne izračunava | MBE eShip vs WC shipping API | update MBE, provjeriti zone |
 | Swatchevi nestali | Variation Swatches vs WC 10 | update dodatka |
 | Dupli cookie banner | Complianz + CookieYes | deaktivirati jedan |

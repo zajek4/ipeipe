@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# audit-uomo-compat.sh
+# audit-theme-compat.sh
 #
-# Provjera kompatibilnosti Uomo (ApusTheme) teme s instaliranim
-# WooCommerce / Elementor / PHP / WordPress stackom.
+# Provjera kompatibilnosti BILO KOJE teme (Uomo, Companion, child tema…)
+# s instaliranim WooCommerce / Elementor / PHP / WordPress stackom.
 #
 # Pokreće se NA SERVERU (ili lokalno na kopiji) i ne mijenja ništa —
 # samo čita datoteke i ispisuje nalaze.
 #
 # Primjena:
-#   ./audit-uomo-compat.sh <putanja-do-teme> [putanja-do-woocommerce]
-#   ./audit-uomo-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce
-#
-# Opcionalno: 3. argument = putanja do child teme (npr. uomo-child)
+#   ./audit-theme-compat.sh <tema> [woocommerce] [child-tema] [WP-verzija]
+#   ./audit-theme-compat.sh wp-content/themes/companion wp-content/plugins/woocommerce
+#   ./audit-theme-compat.sh wp-content/themes/companion wp-content/plugins/woocommerce "" 7.1.3
 # ---------------------------------------------------------------------------
 
 set -u
@@ -20,6 +19,7 @@ set -u
 THEME_DIR="${1:-}"
 WC_DIR="${2:-}"
 CHILD_DIR="${3:-}"
+WP_VER_ARG="${4:-}"
 
 RED=$'\033[0;31m'; YEL=$'\033[0;33m'; GRN=$'\033[0;32m'; BLD=$'\033[1m'; NC=$'\033[0m'
 [ -t 1 ] || { RED=""; YEL=""; GRN=""; BLD=""; NC=""; }
@@ -33,8 +33,8 @@ ok()   { printf '  %sOK%s    %s\n' "$GRN" "$NC" "$1"; }
 info() { printf '        %s\n' "$1"; }
 
 if [ -z "$THEME_DIR" ] || [ ! -d "$THEME_DIR" ]; then
-  echo "Upotreba: $0 <putanja-do-teme> [putanja-do-woocommerce] [putanja-do-child-teme]"
-  echo "Primjer:  $0 wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child"
+  echo "Upotreba: $0 <tema> [woocommerce] [child-tema] [WP-verzija]"
+  echo "Primjer:  $0 wp-content/themes/companion wp-content/plugins/woocommerce"
   exit 2
 fi
 
@@ -92,7 +92,14 @@ REQ_PHP="$(hdr_version "$THEME_DIR/style.css" 'Requires PHP')"
 echo "  Requires at least: ${REQ_WP:-nije deklarirano}"
 echo "  Tested up to:      ${TESTED_WP:-nije deklarirano}"
 echo "  Requires PHP:      ${REQ_PHP:-nije deklarirano}"
-info "ApusTheme deklaracije objavljuje na ThemeForest stranici proizvoda, ne u style.css."
+info "Kod ThemeForest tema deklaracije (podržane WP/WC verzije) stoje na stranici proizvoda, ne u style.css."
+if [ -n "$WP_VER_ARG" ]; then
+  if [ -n "$TESTED_WP" ] && ver_gt "$WP_VER_ARG" "$TESTED_WP"; then
+    warn "Instalirani WP ${WP_VER_ARG} je NOVIJI od 'Tested up to' (${TESTED_WP}) — tema nije testirana na toj verziji."
+  elif [ -n "$TESTED_WP" ]; then
+    ok "Instalirani WP ${WP_VER_ARG} je unutar 'Tested up to' (${TESTED_WP})."
+  fi
+fi
 
 # ---------- 3. WooCommerce predlošci --------------------------------------
 if [ -n "$WC_VERSION" ]; then
@@ -157,21 +164,44 @@ fi
 
 # ---------- 5. Elementor ---------------------------------------------------
 section "5. Elementor kompatibilnost"
-SCHEMES="$(grep -rl 'Core\\Schemes' "$THEME_DIR" --include='*.php' 2>/dev/null | sed "s|$THEME_DIR/||")"
+
+# 5.1 uklonjene Scheme klase (deleted 3.26) -> fatal u editoru
+SCHEMES="$(grep -rl 'Core\\Schemes\|Scheme_Typography\|Scheme_Color' "$THEME_DIR" --include='*.php' 2>/dev/null | sed "s|$THEME_DIR/||")"
 if [ -n "$SCHEMES" ]; then
-  fail "Korištenje uklonjenih Elementor Scheme klasa (uklonjeno u Elementor 3.26+, fatal u editoru):"
+  fail "Korištenje uklonjenih Elementor Scheme klasa (deleted u 3.26; fatal pri gradnji kontrola):"
   printf '%s\n' "$SCHEMES" | sed 's/^/        /'
 else
   ok "Nema referenci na uklonjene Core\\Schemes klase."
 fi
 
+# 5.2 Swiper 5 -> 8 (deleted 3.26) i Waypoints (deleted 3.24)
+SWIPER="$(grep -rIl 'swiper-container\|Swiper5\|swiper-container-horizontal' "$THEME_DIR" 2>/dev/null | sed "s|$THEME_DIR/||" | grep -vE '\.min\.js$' | head -12)"
+[ -n "$SWIPER" ] && { warn "Legacy Swiper 5 oznake (Swiper 8 uklonjen u 3.26 — karuseli mogu puknuti):"; printf '%s\n' "$SWIPER" | sed 's/^/        /'; } \
+  || ok "Nema legacy Swiper 5 oznaka."
+
+WAYP="$(grep -rIn 'elementor-waypoints\|waypoints(' "$THEME_DIR" --include='*.php' --include='*.js' 2>/dev/null | grep -v '\.min\.js' | sed "s|$THEME_DIR/||" | head -8)"
+[ -n "$WAYP" ] && { warn "Ovisnost o Waypoints.js (uklonjen u Elementor 3.24 — scroll animacije prestaju):"; printf '%s\n' "$WAYP" | sed 's/^/        /'; } \
+  || ok "Nema ovisnosti o Waypoints.js."
+
+# 5.3 deprecated Elementor API (radi, ali puni debug.log)
 DEPR="$(grep -rl 'register_widget_type\|widgets_registered\|controls_registered' "$THEME_DIR" --include='*.php' 2>/dev/null | sed "s|$THEME_DIR/||")"
 if [ -n "$DEPR" ]; then
-  warn "Korištenje deprecated Elementor API-ja (radi, ali puni debug.log deprecationima):"
-  printf '%s\n' "$DEPR" | sed 's/^/        /'
+  warn "Deprecated Elementor API u $(printf '%s\n' "$DEPR" | wc -l | tr -d ' ') datoteka (funkcionalno OK, deprecation u logu):"
+  printf '%s\n' "$DEPR" | head -8 | sed 's/^/        /'
+  [ "$(printf '%s\n' "$DEPR" | wc -l)" -gt 8 ] && info "… i još $(( $(printf '%s\n' "$DEPR" | wc -l) - 8 )) datoteka"
 else
-  ok "Nema deprecated Elementor API poziva."
+  ok "Nema deprecated Elementor registracijskih API poziva."
 fi
+
+# 5.4 deprecated metode s donjom crtom (najava brisanja u 3.36 — provjereno: u 4.3.5 još RADE)
+UND="$(grep -rln 'function _register_controls\|function _content_template\|function _render(' "$THEME_DIR" --include='*.php' 2>/dev/null | sed "s|$THEME_DIR/||")"
+[ -n "$UND" ] && { warn "Widgeti koriste _register_controls()/_render()/_content_template() (deprecated; u 4.3.5 još rade):"; printf '%s\n' "$UND" | sed 's/^/        /'; } \
+  || ok "Nema deprecated metoda s donjom crtom."
+
+# 5.5 CSS koji targetira V3 klase (najosjetljivije na Optimized Markup / V4)
+V3CSS="$(grep -rIno '\.elementor-widget-container\|\.elementor-button-wrapper\|\.elementor-row\|\.elementor-column-wrap\|\.elementor-swiper' "$THEME_DIR" --include='*.css' --include='*.scss' 2>/dev/null | grep -v '\.min\.css' | awk -F: '{print $1}' | sort | uniq -c | sort -rn | head -8)"
+[ -n "$V3CSS" ] && warn "CSS targetira V3 Elementor klase (provjeri izgled nakon Optimized Markup / V4):" \
+  && printf '%s\n' "$V3CSS" | sed 's/^/        /' || ok "CSS ne targetira V3 Elementor wrapper klase."
 
 # ---------- 6. PHP 8.x -----------------------------------------------------
 section "6. PHP 8.x (uklonjene funkcije / obrasci)"
@@ -212,6 +242,27 @@ if [ -n "$CHILD_DIR" ] && [ -d "$CHILD_DIR" ]; then
 else
   info "Child tema nije proslijeđena kao 3. argument — preskočeno."
   info "Preporuka: uvijek provjeri i child temu, njena pravila imaju prednost."
+fi
+
+# ---------- 8b. Bundlani dodaci u temi ------------------------------------
+section "8b. Bundlani dodaci (ZIP-ovi u temi)"
+ZIPS="$(find "$THEME_DIR" -maxdepth 3 -type f -iname '*.zip' 2>/dev/null | head -20)"
+if [ -n "$ZIPS" ]; then
+  info "Tema nosi vlastite kopije dodataka — oni se ažuriraju SAMO s temom:"
+  printf '%s\n' "$ZIPS" | while read -r z; do
+    hdr=""
+    while IFS= read -r cand; do
+      [ -z "$cand" ] && continue
+      got="$(unzip -p "$z" "$cand" 2>/dev/null | sed -n '1,40p' \
+             | grep -iE '^[ *]*Plugin Name:|^[ *]*Version:' \
+             | sed 's/.*: *//' | tr -d '\r' | paste -sd' ' - | sed 's/  */ /g')"
+      if [ -n "$(printf '%s' "$got" | tr -d ' ')" ]; then hdr="$got"; break; fi
+    done < <(unzip -Z1 "$z" 2>/dev/null | grep -E '^[^/]+/[^/]+\.php$' | head -6)
+    printf '        %-34s %s\n' "$(basename "$z")" "${hdr:-nepoznato}"
+  done
+  info "Provjeri i AKTIVNE verzije tih dodataka u WP adminu — ako su starije od ZIP-a, tema nije do kraja primijenjena."
+else
+  info "Nema ZIP-ova u temi."
 fi
 
 # ---------- 9. Sažetak ----------------------------------------------------

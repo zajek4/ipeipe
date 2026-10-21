@@ -417,8 +417,8 @@ Napomena: **WC 11.2.1 zahtijeva WP 7.0+**, a **WC 10.9.4 zahtijeva WP 6.9+** (ob
 
 | Stavka | Zašto | Kako provjeriti |
 |---|---|---|
-| Sadržaj **child teme** `uomo-child` | nije u repozitoriju (samo parent) | `find wp-content/themes/uomo-child -type f` + `tools/audit-uomo-compat.sh` |
-| Stvarni kod **2.0.37** | plaćeni paket | nakon skidanja: `tools/audit-uomo-compat.sh` na novi paket |
+| Sadržaj **child teme** `uomo-child` | nije u repozitoriju (samo parent) | `find wp-content/themes/uomo-child -type f` + `tools/audit-theme-compat.sh` |
+| Stvarni kod **2.0.37** | plaćeni paket | nakon skidanja: `tools/audit-theme-compat.sh` na novi paket |
 | **HPOS** status (High-Performance Order Storage) | nije u Site Healthu | `wp wc hpos status` / WooCommerce → Status |
 | Licence (Duplicator Pro, CorvusPay, MBE, RevSlider) | nije vidljivo iz izvještaja | administracija dodataka |
 | Sadržaj `maintenance.php` drop-ina | nije prikazan | `cat wp-content/maintenance.php` |
@@ -428,13 +428,13 @@ Napomena: **WC 11.2.1 zahtijeva WP 7.0+**, a **WC 10.9.4 zahtijeva WP 6.9+** (ob
 
 ## 11. Prilog: alat za vlastitu provjeru
 
-Uz ovaj dokument ide skripta **`tools/audit-uomo-compat.sh`** koja na bilo kojem paketu teme (stara verzija, nova 2.0.37, child tema) ponavlja ovu analizu:
+Uz ovaj dokument ide skripta **`tools/audit-theme-compat.sh`** koja na bilo kojem paketu teme (stara verzija, nova 2.0.37, child tema) ponavlja ovu analizu:
 
 ```bash
 # na serveru, iz korijena WordPressa
-bash tools/audit-uomo-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce
+bash tools/audit-theme-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce
 # s child temom
-bash tools/audit-uomo-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child
+bash tools/audit-theme-compat.sh wp-content/themes/uomo wp-content/plugins/woocommerce wp-content/themes/uomo-child
 ```
 
 Provjerava: deklarirane verzije, **zastarjele WooCommerce predloške** (usporedba `@version` s instaliranim WC-om), **hookove koji nedostaju**, korištenje **uklonjenih Elementor klasa**, deprecated Elementor API, PHP 8.x obrasce, legacy jQuery, overridee u child temi. Izlazni kod je `1` ako postoji blokirajući nalaz — pogodno za CI ili za „gate" prije puštanja na produkciju.
@@ -536,6 +536,6 @@ Imate pristup ThemeForest računu s kupnjom itema 31127579?
          Alternativa s nižim troškom ne postoji: 3–6 tjedana zamjene teme košta višestruko više.
 ```
 
-**Napomena o „besplatnim" izvorima:** kod teme je GPL, pa je *korištenje* kopije legalno pitanje licence, ali paketi s „nulled" stranica redovno sadrže skriveni kod (backdoor u `functions.php`, lažni update kanal, ubacivanje vanjskih skripti). Na siteu s plaćanjima i 244 korisnika to je rizik koji nadmašuje 59 USD. Ako paket dolazi s bilo čega osim ThemeForsta ili provjerenog izvođača, prije instalacije obavezno usporediti datoteke s originalom (Diff se vidi u `tools/audit-uomo-compat.sh` izlazu i grepom na `eval`, `base64_decode`, `wp_remote_get` prema nepoznatim domenama).
+**Napomena o „besplatnim" izvorima:** kod teme je GPL, pa je *korištenje* kopije legalno pitanje licence, ali paketi s „nulled" stranica redovno sadrže skriveni kod (backdoor u `functions.php`, lažni update kanal, ubacivanje vanjskih skripti). Na siteu s plaćanjima i 244 korisnika to je rizik koji nadmašuje 59 USD. Ako paket dolazi s bilo čega osim ThemeForsta ili provjerenog izvođača, prije instalacije obavezno usporediti datoteke s originalom (Diff se vidi u `tools/audit-theme-compat.sh` izlazu i grepom na `eval`, `base64_decode`, `wp_remote_get` prema nepoznatim domenama).
 
 ---
