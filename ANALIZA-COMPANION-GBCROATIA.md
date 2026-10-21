@@ -207,7 +207,7 @@ Isti slijed, noćni prozor, uz: `blog_public` na 1, `WP_ENVIRONMENT_TYPE` na pro
 | Elementor editor pukne | vratiti Elementor/Pro na 3.28.4 (ZIP) + Regenerate CSS | 15 min |
 | UAE/CAF problem | vratiti prethodnu verziju ZIP-om | 10 min |
 | WP core problem | host snapshot ili `wp core update --version=6.8.1 --force` + restore baze | 30 min |
-| Nejasno | **cijeli site** iz snapshotа | 30–60 min |
+| Nejasno | **cijeli site** iz snapshot-a | 30–60 min |
 
 ---
 
